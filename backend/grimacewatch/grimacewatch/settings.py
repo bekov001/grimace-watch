@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import logging
 from pathlib import Path
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -36,22 +37,84 @@ REST_FRAMEWORK = {
     ]
 }
 
+
+# from huey import RedisHuey
+# from redis import Redis
+
+# pool = Redis(host='ec2-52-30-0-190.eu-west-1.compute.amazonaws.com', password="p9c8e589d52533082c79c4f1da2046fc6d28ccb5ebd1bf6ce7bbb7aae9bffdbad", port=15770,  ssl=True, ssl_cert_reqs=None)
+# # pool = ConnectionPool(host='ec2-52-30-0-190.eu-west-1.compute.amazonaws.com', password="p9c8e589d52533082c79c4f1da2046fc6d28ccb5ebd1bf6ce7bbb7aae9bffdbad", port=15770,  ssl=True, ssl_cert_reqs=None)
+# HUEY = RedisHuey('my-app', connection_pool=pool)
+
+
+import os
+import ssl
+
+# settings.py
+_broker_url = f'rediss://:p9c8e589d52533082c79c4f1da2046fc6d28ccb5ebd1bf6ce7bbb7aae9bffdbad@ec2-52-30-0-190.eu-west-1.compute.amazonaws.com:15770?ssl_cert_reqs=none'
+
+HUEY = {
+    'huey_class': 'huey.RedisHuey',  # Huey implementation to use.
+    'name': "grimacewatch",  # Use db name for huey.
+    'results': True,  # Store return values of tasks.
+    'store_none': False,  # If a task returns None, do not save to results.
+    'immediate': False,  # If DEBUG=True, run synchronously.
+    'utc': True,  # Use UTC for all times internally.
+    'blocking': True,  # Perform blocking pop rather than poll Redis.
+    'connection': {
+       
+        # 'connection_pool': None,  # Definitely you should use pooling!
+        # # ... tons of other options, see redis-py for details.
+        # # huey-specific connection parameters.
+        # 'read_timeout': 1,  # If not polling (blocking pop), use timeout.
+        'url': _broker_url,  # Allow Redis config via a DSN.
+        
+    },
+    # ... other settings ...
+}
+
+# HUEY = {
+#     'huey_class': 'huey.RedisHuey',
+#     'name': 'grimacewatch',
+#     "immediate": False,
+#     'connection': {
+#         "ssl": True,
+#         "ssl_cert_reqs":None,
+#         'connection_pool': None,  # Definitely you should use pooling!
+#         # ... tons of other options, see redis-py for details.
+
+#         # huey-specific connection parameters.
+#         'read_timeout': 1,  # If not polling (blocking pop), use timeout.
+#         'url': "rediss://:p9c8e589d52533082c79c4f1da2046fc6d28ccb5ebd1bf6ce7bbb7aae9bffdbad@ec2-52-30-0-190.eu-west-1.compute.amazonaws.com:15770",  # Allow Redis config via a DSN.
+#     },
+#     'consumer': {
+#         'blocking': True,  # Use blocking list pop instead of polling Redis.
+#         'loglevel': logging.DEBUG,
+#         'workers': 4,
+#         'scheduler_interval': 1,
+#         'simple_log': True,
+#     },
+# }
+
 # Application definition
 
 INSTALLED_APPS = [
+     'huey.contrib.djhuey',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     'rest_framework',
     'corsheaders',
-    'main'
+    'main',
+    
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -81,6 +144,13 @@ TEMPLATES = [
     },
 ]
 
+# STORAGES = {
+#     # ...
+#     "staticfiles": {
+#         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+#     },
+# }
+
 WSGI_APPLICATION = 'grimacewatch.wsgi.application'
 
 
@@ -94,17 +164,36 @@ WSGI_APPLICATION = 'grimacewatch.wsgi.application'
 #     }
 # }
 
+# import os
+
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": os.environ.get('REDIS_URL'),
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "CONNECTION_POOL_KWARGS": {
+#                 "ssl_cert_reqs": None
+#             },
+#         }
+#     }
+# }
+
 
 DATABASES = {     
 		'default': {
-      	'ENGINE': 'django.db.backends.postgresql',
-      	'HOST' : os.environ.get('POSTGRES_HOST', 'ec2-54-246-1-94.eu-west-1.compute.amazonaws.com'),
-      	'NAME': os.environ.get('POSTGRES_DB', 'djo13s5ucnojn'),
-      	'USER': os.environ.get('POSTGRES_USER', 'mepamoyclsojxk'),
-      	'PASSWORD': os.environ.get('POSTGRES_PASSWORD', '6867f1badf2b869aa97ef468c93bce9a78c6172f488754f224d4b276850fe5b5'),
-      	'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+      	'ENGINE': 'django.db.backends.postgresql_psycopg2', 
+      	'HOST' : 'ec2-54-246-1-94.eu-west-1.compute.amazonaws.com',
+      	'NAME': ('djo13s5ucnojn'),
+      	'USER': 'mepamoyclsojxk',
+      	'PASSWORD':  '6867f1badf2b869aa97ef468c93bce9a78c6172f488754f224d4b276850fe5b5',
+      	'PORT': '5432',
     }
 }
+DATABASE_URL = ""
+import dj_database_url
+db_from_env = dj_database_url.config(conn_max_age=500)
+DATABASES['default'].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -140,7 +229,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -148,6 +237,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-import dj_database_url
-db_from_env = dj_database_url.config(conn_max_age=500)
-DATABASES['default'].update(db_from_env)
+
+
+
+import django_heroku
+django_heroku.settings(locals())

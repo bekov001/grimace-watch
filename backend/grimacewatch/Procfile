@@ -1,1 +1,5 @@
-web: gunicorn grimacewatch.wsgi --log-file
+release: python manage.py makemigrations 
+release: python manage.py migrate
+
+worker: python manage.py run_huey
+web: gunicorn grimacewatch.wsgi 
