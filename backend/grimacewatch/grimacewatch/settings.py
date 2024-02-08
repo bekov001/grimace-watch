@@ -50,8 +50,7 @@ import os
 import ssl
 
 # settings.py
-_broker_url = f'rediss://:p9c8e589d52533082c79c4f1da2046fc6d28ccb5ebd1bf6ce7bbb7aae9bffdbad@ec2-52-30-0-190.eu-west-1.compute.amazonaws.com:15770?ssl_cert_reqs=none'
-
+_broker_url = f'rediss://:p9c8e589d52533082c79c4f1da2046fc6d28ccb5ebd1bf6ce7bbb7aae9bffdbad@ec2-108-128-133-91.eu-west-1.compute.amazonaws.com:11380'
 HUEY = {
     'huey_class': 'huey.RedisHuey',  # Huey implementation to use.
     'name': "grimacewatch",  # Use db name for huey.
